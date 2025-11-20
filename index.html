@@ -1,0 +1,1955 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Solis AI - Conversational Data Assistant</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+        color: #e0e0e0;
+        height: 100vh;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+    }
+
+    /* Header */
+    .header {
+        background: rgba(26, 26, 46, 0.95);
+        backdrop-filter: blur(10px);
+        padding: 1rem 2rem;
+        border-bottom: 1px solid rgba(102, 126, 234, 0.2);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    }
+
+    .header-left {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .logo {
+        font-size: 1.8rem;
+        font-weight: 800;
+        background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+        background-clip: text;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    .tagline {
+        font-size: 0.9rem;
+        color: rgba(255,255,255,0.6);
+        font-weight: 300;
+    }
+
+    .new-chat-btn {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        padding: 0.6rem 1.5rem;
+        border-radius: 8px;
+        color: white;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-size: 0.9rem;
+    }
+
+    .new-chat-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+    }
+
+    /* Main Container */
+    .main-container {
+        flex: 1;
+        display: flex;
+        overflow: hidden;
+    }
+
+    /* Chat Area */
+    .chat-area {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        position: relative;
+    }
+
+    /* Messages Container */
+    .messages-container {
+        flex: 1;
+        overflow-y: auto;
+        padding: 2rem;
+        scroll-behavior: smooth;
+    }
+
+    .messages-container::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    .messages-container::-webkit-scrollbar-track {
+        background: rgba(255,255,255,0.05);
+    }
+
+    .messages-container::-webkit-scrollbar-thumb {
+        background: rgba(102, 126, 234, 0.5);
+        border-radius: 4px;
+    }
+
+    /* Empty State */
+    .empty-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        padding: 2rem;
+        text-align: center;
+    }
+
+    .empty-state-icon {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+        animation: float 3s ease-in-out infinite;
+    }
+
+    @keyframes float {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-10px); }
+    }
+
+    .empty-state h2 {
+        font-size: 2rem;
+        color: #667eea;
+        margin-bottom: 0.5rem;
+    }
+
+    .empty-state p {
+        font-size: 1.1rem;
+        color: rgba(255,255,255,0.6);
+        margin-bottom: 2rem;
+    }
+
+    .starter-suggestions {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1rem;
+        max-width: 800px;
+        width: 100%;
+    }
+
+    .starter-card {
+        background: rgba(102, 126, 234, 0.1);
+        border: 1px solid rgba(102, 126, 234, 0.3);
+        padding: 1.5rem;
+        border-radius: 12px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-align: left;
+    }
+
+    .starter-card:hover {
+        background: rgba(102, 126, 234, 0.2);
+        transform: translateY(-4px);
+        box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+    }
+
+    .starter-card-icon {
+        font-size: 2rem;
+        margin-bottom: 0.75rem;
+    }
+
+    .starter-card-text {
+        font-size: 1rem;
+        line-height: 1.5;
+        color: #e0e0e0;
+    }
+
+    /* Message Bubbles */
+    .message {
+        margin-bottom: 2rem;
+        animation: fadeInUp 0.5s ease;
+    }
+
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .message-header {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 0.75rem;
+    }
+
+    .message-avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+        font-weight: 600;
+    }
+
+    .user-avatar {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+
+    .ai-avatar {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        color: white;
+    }
+
+    .message-role {
+        font-weight: 600;
+        font-size: 0.95rem;
+    }
+
+    .message-content {
+        margin-left: 2.5rem;
+        line-height: 1.7;
+        font-size: 1rem;
+    }
+
+    .user-message .message-content {
+        color: #ffffff;
+    }
+
+    .ai-message .message-content {
+        color: #e0e0e0;
+    }
+
+    /* Summary Card */
+    .summary-card {
+        background: rgba(31, 31, 46, 0.5);
+        border: 1px solid rgba(102, 126, 234, 0.2);
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin: 1rem 0;
+    }
+
+    /* Suggestions */
+    .suggestions {
+        margin: 1.5rem 0;
+    }
+
+    .suggestions-label {
+        font-size: 0.9rem;
+        color: rgba(255,255,255,0.6);
+        margin-bottom: 0.75rem;
+        font-weight: 500;
+    }
+
+    .suggestions-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 0.75rem;
+    }
+
+    .suggestion-chip {
+        background: rgba(102, 126, 234, 0.15);
+        border: 1px solid rgba(102, 126, 234, 0.3);
+        padding: 0.75rem 1rem;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-size: 0.9rem;
+        text-align: left;
+        color: #e0e0e0;
+    }
+
+    .suggestion-chip:hover {
+        background: rgba(102, 126, 234, 0.3);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    }
+
+    /* Data Table */
+    .data-table-container {
+        margin: 1.5rem 0;
+        background: rgba(31, 31, 46, 0.5);
+        border: 1px solid rgba(102, 126, 234, 0.2);
+        border-radius: 12px;
+        overflow: hidden;
+    }
+
+    .data-table-header {
+        padding: 1rem 1.5rem;
+        background: rgba(102, 126, 234, 0.1);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid rgba(102, 126, 234, 0.2);
+    }
+
+    .data-table-title {
+        font-weight: 600;
+        color: #667eea;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .data-table-actions {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .table-action-btn {
+        background: rgba(102, 126, 234, 0.2);
+        border: 1px solid rgba(102, 126, 234, 0.3);
+        padding: 0.5rem 1rem;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 0.85rem;
+        color: #a5b4fc;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+/* Inline feedback (thumbs) under each AI message */
+.inline-feedback {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+    align-items: center;
+}
+
+.inline-feedback .thumb-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 0.6rem;
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.05);
+    background: rgba(255,255,255,0.02);
+    cursor: pointer;
+    transition: all 0.18s ease;
+    color: #e0e0e0;
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+.inline-feedback .thumb-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px rgba(0,0,0,0.35);
+    background: rgba(102, 126, 234, 0.12);
+}
+
+.inline-feedback .thumb-btn.selected {
+    border-color: rgba(102, 126, 234, 0.6);
+    background: rgba(102, 126, 234, 0.18);
+    color: #fff;
+}
+
+.inline-feedback .thumb-icon {
+    font-size: 1.05rem;
+}
+
+    .table-action-btn:hover {
+        background: rgba(102, 126, 234, 0.3);
+        transform: translateY(-2px);
+    }
+
+    .table-wrapper {
+        max-height: 400px;
+        overflow: auto;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    thead {
+        position: sticky;
+        top: 0;
+        background: rgba(102, 126, 234, 0.15);
+        z-index: 10;
+    }
+
+    th {
+        padding: 1rem;
+        text-align: left;
+        font-weight: 600;
+        border-bottom: 2px solid rgba(102, 126, 234, 0.3);
+        font-size: 0.9rem;
+        color: #a5b4fc;
+    }
+
+    td {
+        padding: 0.875rem 1rem;
+        border-bottom: 1px solid rgba(255,255,255,0.05);
+        font-size: 0.9rem;
+    }
+
+    tbody tr:hover {
+        background: rgba(102, 126, 234, 0.1);
+    }
+
+    /* Chart Container */
+    .chart-container {
+        margin: 1.5rem 0;
+        background: rgba(31, 31, 46, 0.5);
+        border: 1px solid rgba(102, 126, 234, 0.2);
+        border-radius: 12px;
+        padding: 1.5rem;
+    }
+
+    .chart-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+    }
+
+    .chart-title {
+        font-weight: 600;
+        color: #667eea;
+        font-size: 1.1rem;
+    }
+
+    .chart-wrapper {
+        position: relative;
+        height: 400px;
+    }
+    /* Input Area */
+    .input-area {
+        padding: 1.5rem 2rem;
+        background: rgba(26, 26, 46, 0.95);
+        border-top: 1px solid rgba(102, 126, 234, 0.2);
+        backdrop-filter: blur(10px);
+    }
+
+    .input-container {
+        max-width: 900px;
+        margin: 0 auto;
+        position: relative;
+    }
+
+    .input-wrapper {
+        display: flex;
+        align-items: flex-end;
+        gap: 0.75rem;
+        background: rgba(45, 45, 64, 0.5);
+        border: 2px solid rgba(102, 126, 234, 0.3);
+        border-radius: 16px;
+        padding: 0.75rem;
+        transition: all 0.3s ease;
+    }
+
+    .input-wrapper:focus-within {
+        border-color: #667eea;
+        box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+    }
+
+    #message-input {
+        flex: 1;
+        background: transparent;
+        border: none;
+        color: #fff;
+        font-size: 1rem;
+        outline: none;
+        resize: none;
+        max-height: 200px;
+        min-height: 24px;
+        line-height: 1.5;
+        font-family: inherit;
+    }
+
+    #message-input::placeholder {
+        color: rgba(255,255,255,0.4);
+    }
+
+    .input-actions {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+    }
+
+    .mic-btn, .send-btn {
+        background: rgba(102, 126, 234, 0.2);
+        border: none;
+        width: 40px;
+        height: 40px;
+        border-radius: 8px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+        transition: all 0.3s ease;
+    }
+
+    .mic-btn:hover, .send-btn:hover {
+        background: rgba(102, 126, 234, 0.4);
+        transform: scale(1.05);
+    }
+
+    .send-btn {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+
+    .send-btn:hover {
+        transform: scale(1.05);
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+    }
+
+    .send-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    .mic-btn.recording {
+        background: #ef4444;
+        animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.6; }
+    }
+
+    /* Thinking Indicator */
+    .thinking-indicator {
+        display: none;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 1rem 1.5rem;
+        background: rgba(102, 126, 234, 0.1);
+        border-radius: 12px;
+        margin: 1rem 2.5rem;
+        animation: fadeIn 0.3s ease;
+    }
+
+    .thinking-indicator.show {
+        display: flex;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+
+    .thinking-dots {
+        display: flex;
+        gap: 0.4rem;
+    }
+
+    .thinking-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #667eea;
+        animation: bounce 1.4s infinite ease-in-out;
+    }
+
+    .thinking-dot:nth-child(1) { animation-delay: -0.32s; }
+    .thinking-dot:nth-child(2) { animation-delay: -0.16s; }
+
+    @keyframes bounce {
+        0%, 80%, 100% { transform: scale(0); }
+        40% { transform: scale(1); }
+    }
+
+    /* Feedback Widget */
+    .feedback-widget {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background: rgba(26, 26, 46, 0.98);
+        border: 1px solid rgba(102, 126, 234, 0.3);
+        border-radius: 16px;
+        padding: 1rem;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+        z-index: 1000;
+        min-width: 280px;
+        display: none;
+        animation: slideInUp 0.4s ease;
+    }
+
+    .feedback-widget.show {
+        display: block;
+    }
+
+    @keyframes slideInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .feedback-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+
+    .feedback-title {
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: #667eea;
+    }
+
+    .feedback-close {
+        background: transparent;
+        border: none;
+        color: rgba(255,255,255,0.6);
+        cursor: pointer;
+        font-size: 1.2rem;
+        padding: 0;
+        width: 24px;
+        height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 4px;
+        transition: all 0.3s ease;
+    }
+
+    .feedback-close:hover {
+        background: rgba(255,255,255,0.1);
+        color: #fff;
+    }
+
+    .feedback-emojis {
+        display: flex;
+        gap: 0.5rem;
+        justify-content: center;
+        margin-bottom: 1rem;
+    }
+
+    .emoji-btn {
+        background: rgba(255,255,255,0.05);
+        border: 1px solid rgba(255,255,255,0.1);
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        font-size: 1.5rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .emoji-btn:hover {
+        transform: scale(1.1);
+        background: rgba(255,255,255,0.1);
+    }
+
+    .emoji-btn.selected {
+        border-color: #667eea;
+        background: rgba(102, 126, 234, 0.2);
+        transform: scale(1.15);
+    }
+
+    .feedback-text {
+        width: 100%;
+        padding: 0.75rem;
+        border-radius: 8px;
+        border: 1px solid rgba(255,255,255,0.1);
+        background: rgba(255,255,255,0.05);
+        color: #fff;
+        font-size: 0.9rem;
+        resize: vertical;
+        min-height: 60px;
+        font-family: inherit;
+        margin-bottom: 0.75rem;
+    }
+
+    .feedback-text::placeholder {
+        color: rgba(255,255,255,0.4);
+    }
+
+    .feedback-submit {
+        width: 100%;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        padding: 0.7rem;
+        color: white;
+        font-weight: 600;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-size: 0.9rem;
+    }
+
+    .feedback-submit:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+    }
+
+    .feedback-success {
+        text-align: center;
+        color: #4ade80;
+        padding: 1rem;
+        font-weight: 500;
+    }
+
+    /* Chart Modal */
+    .chart-modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.8);
+        z-index: 2000;
+        align-items: center;
+        justify-content: center;
+        animation: fadeIn 0.3s ease;
+    }
+
+    .chart-modal.show {
+        display: flex;
+    }
+
+    .chart-modal-content {
+        background: rgba(26, 26, 46, 0.98);
+        border-radius: 16px;
+        padding: 2rem;
+        max-width: 600px;
+        width: 90%;
+        border: 1px solid rgba(102, 126, 234, 0.3);
+        animation: scaleIn 0.3s ease;
+    }
+
+    @keyframes scaleIn {
+        from {
+            transform: scale(0.9);
+            opacity: 0;
+        }
+        to {
+            transform: scale(1);
+            opacity: 1;
+        }
+    }
+
+    .modal-title {
+        color: #667eea;
+        margin-bottom: 1.5rem;
+        font-size: 1.5rem;
+        text-align: center;
+    }
+
+    .chart-types-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .chart-type-btn {
+        background: rgba(102, 126, 234, 0.15);
+        border: 2px solid rgba(102, 126, 234, 0.3);
+        padding: 1rem;
+        border-radius: 12px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.5rem;
+        color: #e0e0e0;
+    }
+
+    .chart-type-btn:hover {
+        background: rgba(102, 126, 234, 0.3);
+        transform: translateY(-4px);
+    }
+
+    .chart-type-btn.selected {
+        background: rgba(102, 126, 234, 0.4);
+        border-color: #667eea;
+    }
+
+    .chart-type-icon {
+        font-size: 2rem;
+    }
+
+    .chart-type-label {
+        font-size: 0.85rem;
+        font-weight: 500;
+    }
+
+    .modal-actions {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+    }
+
+    .modal-btn {
+        padding: 0.75rem 2rem;
+        border-radius: 8px;
+        border: none;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-size: 0.95rem;
+    }
+
+    .modal-btn-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+
+    .modal-btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+    }
+
+    .modal-btn-secondary {
+        background: rgba(255,255,255,0.1);
+        color: white;
+        border: 1px solid rgba(255,255,255,0.2);
+    }
+
+    .modal-btn-secondary:hover {
+        background: rgba(255,255,255,0.15);
+    }
+
+    /* Error Message */
+    .error-message {
+        background: rgba(239, 68, 68, 0.1);
+        border: 1px solid rgba(239, 68, 68, 0.3);
+        color: #fca5a5;
+        padding: 1rem 1.5rem;
+        border-radius: 12px;
+        margin: 1rem 2.5rem;
+        animation: shake 0.5s ease;
+    }
+
+    @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        25% { transform: translateX(-10px); }
+        75% { transform: translateX(10px); }
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+        .header {
+            padding: 1rem;
+        }
+
+        .logo {
+            font-size: 1.4rem;
+        }
+
+        .tagline {
+            display: none;
+        }
+
+        .messages-container {
+            padding: 1rem;
+        }
+
+        .message-content {
+            margin-left: 0;
+        }
+
+        .starter-suggestions {
+            grid-template-columns: 1fr;
+        }
+
+        .suggestions-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .chart-types-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .feedback-widget {
+            left: 20px;
+            right: 20px;
+            min-width: auto;
+        }
+
+        .input-area {
+            padding: 1rem;
+        }
+    }
+
+    /* Loading State */
+    .loading-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.7);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 3000;
+    }
+
+    .loading-overlay.show {
+        display: flex;
+    }
+
+    .loading-spinner {
+        width: 50px;
+        height: 50px;
+        border: 4px solid rgba(102, 126, 234, 0.3);
+        border-top-color: #667eea;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+</style>
+</head>
+<body>
+    <div class="header">
+    <div class="header-left">
+        <div><span style="font-size: 1.8rem;">🌟</span><span class="logo"> Solis AI</span></div>
+        <div class="tagline">Conversational Data Assistant</div>
+    </div>
+    <button class="new-chat-btn" id="new-chat-btn">+ New Chat</button>
+</div>
+
+<div class="main-container">
+    <div class="chat-area">
+        <div class="messages-container" id="messages-container">
+            <!-- Empty State -->
+            <div class="empty-state" id="empty-state">
+                <div class="empty-state-icon">💬</div>
+                <h2>Welcome to Solis AI</h2>
+                <p>Ask me anything about your data, and I'll help you explore it</p>
+                <div class="starter-suggestions" id="starter-suggestions">
+                    <!-- Starter questions will be loaded here -->
+                </div>
+            </div>
+
+            <!-- Messages will appear here -->
+        </div>
+
+        <!-- Thinking Indicator -->
+        <div class="thinking-indicator" id="thinking-indicator">
+            <div class="thinking-dots">
+                <div class="thinking-dot"></div>
+                <div class="thinking-dot"></div>
+                <div class="thinking-dot"></div>
+            </div>
+            <span>Solis is thinking...</span>
+        </div>
+
+        <!-- Input Area -->
+        <div class="input-area">
+            <div class="input-container">
+                <div class="input-wrapper">
+                    <textarea 
+                        id="message-input" 
+                        placeholder="Ask about your data..." 
+                        rows="1"
+                    ></textarea>
+                    <div class="input-actions">
+                        <button class="mic-btn" id="mic-btn" title="Voice input">🎤</button>
+                        <button class="send-btn" id="send-btn" disabled>
+                            <span>➤</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Feedback Widget -->
+<div class="feedback-widget" id="feedback-widget">
+    <div class="feedback-header">
+        <div class="feedback-title">How was this response?</div>
+        <button class="feedback-close" id="feedback-close">×</button>
+    </div>
+    <div id="feedback-content">
+        <div class="feedback-emojis">
+            <button class="emoji-btn" data-rating="excellent" title="Excellent">😍</button>
+            <button class="emoji-btn" data-rating="good" title="Good">😊</button>
+            <button class="emoji-btn" data-rating="okay" title="Okay">😐</button>
+            <button class="emoji-btn" data-rating="poor" title="Poor">😞</button>
+        </div>
+        <textarea 
+            class="feedback-text" 
+            id="feedback-text" 
+            placeholder="Tell us more (optional)..."
+        ></textarea>
+        <button class="feedback-submit" id="feedback-submit">Submit Feedback</button>
+    </div>
+</div>
+
+<!-- Chart Selection Modal -->
+<div class="chart-modal" id="chart-modal">
+    <div class="chart-modal-content">
+        <h2 class="modal-title">📊 Choose Visualization Type</h2>
+        <div class="chart-types-grid">
+            <button class="chart-type-btn" data-chart="bar">
+                <div class="chart-type-icon">📊</div>
+                <div class="chart-type-label">Bar Chart</div>
+            </button>
+            <button class="chart-type-btn" data-chart="line">
+                <div class="chart-type-icon">📈</div>
+                <div class="chart-type-label">Line Chart</div>
+            </button>
+            <button class="chart-type-btn" data-chart="pie">
+                <div class="chart-type-icon">🥧</div>
+                <div class="chart-type-label">Pie Chart</div>
+            </button>
+            <button class="chart-type-btn" data-chart="doughnut">
+                <div class="chart-type-icon">🍩</div>
+                <div class="chart-type-label">Doughnut</div>
+            </button>
+            <button class="chart-type-btn" data-chart="area">
+                <div class="chart-type-icon">📉</div>
+                <div class="chart-type-label">Area Chart</div>
+            </button>
+            <button class="chart-type-btn" data-chart="radar">
+                <div class="chart-type-icon">🎯</div>
+                <div class="chart-type-label">Radar Chart</div>
+            </button>
+        </div>
+        <div class="modal-actions">
+            <button class="modal-btn modal-btn-primary" id="apply-chart-btn">Apply</button>
+            <button class="modal-btn modal-btn-secondary" id="cancel-chart-btn">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<!-- Loading Overlay -->
+<div class="loading-overlay" id="loading-overlay">
+    <div class="loading-spinner"></div>
+</div>
+
+<script>
+// Global State
+let conversationHistory = [];
+let sessionId = 'session_' + Date.now();
+let currentFeedbackMessageId = null;
+let lastQueryData = null;
+let recognition = null;
+let isRecording = false;
+let selectedChartType = null;
+let currentChart = null;
+
+// DOM Elements
+const messagesContainer = document.getElementById('messages-container');
+const emptyState = document.getElementById('empty-state');
+const messageInput = document.getElementById('message-input');
+const sendBtn = document.getElementById('send-btn');
+const micBtn = document.getElementById('mic-btn');
+const thinkingIndicator = document.getElementById('thinking-indicator');
+const feedbackWidget = document.getElementById('feedback-widget');
+const feedbackClose = document.getElementById('feedback-close');
+const feedbackSubmit = document.getElementById('feedback-submit');
+const feedbackText = document.getElementById('feedback-text');
+const newChatBtn = document.getElementById('new-chat-btn');
+const chartModal = document.getElementById('chart-modal');
+const applyChartBtn = document.getElementById('apply-chart-btn');
+const cancelChartBtn = document.getElementById('cancel-chart-btn');
+
+// Initialize
+window.addEventListener('DOMContentLoaded', init);
+
+async function init() {
+    setupEventListeners();
+    await loadStarterSuggestions();
+    setupSpeechRecognition();
+}
+
+function setupEventListeners() {
+    // Input handling
+    messageInput.addEventListener('input', handleInputChange);
+    messageInput.addEventListener('keydown', handleKeyDown);
+    sendBtn.addEventListener('click', sendMessage);
+    
+    // New chat
+    newChatBtn.addEventListener('click', startNewChat);
+    
+    // Feedback
+    feedbackClose.addEventListener('click', closeFeedback);
+    feedbackSubmit.addEventListener('click', submitFeedback);
+    document.querySelectorAll('.emoji-btn').forEach(btn => {
+        btn.addEventListener('click', selectEmoji);
+    });
+    
+    // Chart modal
+    cancelChartBtn.addEventListener('click', () => chartModal.classList.remove('show'));
+    applyChartBtn.addEventListener('click', applyChartSelection);
+    document.querySelectorAll('.chart-type-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            document.querySelectorAll('.chart-type-btn').forEach(b => b.classList.remove('selected'));
+            this.classList.add('selected');
+            selectedChartType = this.dataset.chart;
+        });
+    });
+    
+    // Close modal on backdrop click
+    chartModal.addEventListener('click', (e) => {
+        if (e.target === chartModal) {
+            chartModal.classList.remove('show');
+        }
+    });
+    
+    // Voice input
+    micBtn.addEventListener('click', toggleVoiceInput);
+}
+
+function handleInputChange() {
+    const hasText = messageInput.value.trim().length > 0;
+    sendBtn.disabled = !hasText;
+    
+    // Auto-resize textarea
+    messageInput.style.height = 'auto';
+    messageInput.style.height = messageInput.scrollHeight + 'px';
+}
+
+function handleKeyDown(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        if (!sendBtn.disabled) {
+            sendMessage();
+        }
+    }
+}
+
+async function loadStarterSuggestions() {
+    try {
+        const res = await fetch('/get_initial_suggestions');
+        const data = await res.json();
+        
+        const container = document.getElementById('starter-suggestions');
+        container.innerHTML = '';
+        
+        const icons = ['💡', '📊', '🔍', '📈', '💬', '🎯'];
+        
+        data.suggestions.forEach((suggestion, idx) => {
+            const card = document.createElement('div');
+            card.className = 'starter-card';
+            card.innerHTML = `
+                <div class="starter-card-icon">${icons[idx % icons.length]}</div>
+                <div class="starter-card-text">${suggestion}</div>
+            `;
+            card.addEventListener('click', () => {
+                messageInput.value = suggestion;
+                handleInputChange();
+                messageInput.focus();
+            });
+            container.appendChild(card);
+        });
+    } catch (err) {
+        console.error('Error loading suggestions:', err);
+    }
+}
+
+function setupSpeechRecognition() {
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        recognition = new SpeechRecognition();
+        recognition.lang = 'en-US';
+        recognition.interimResults = false;
+
+        recognition.onresult = (event) => {
+            const transcript = event.results[0][0].transcript;
+            messageInput.value = transcript;
+            handleInputChange();
+            micBtn.classList.remove('recording');
+            isRecording = false;
+        };
+
+        recognition.onerror = () => {
+            micBtn.classList.remove('recording');
+            isRecording = false;
+        };
+
+        recognition.onend = () => {
+            micBtn.classList.remove('recording');
+            isRecording = false;
+        };
+    } else {
+        micBtn.disabled = true;
+        micBtn.style.opacity = '0.5';
+    }
+}
+
+function toggleVoiceInput() {
+    if (isRecording) {
+        recognition.stop();
+    } else {
+        recognition.start();
+        micBtn.classList.add('recording');
+        isRecording = true;
+    }
+}
+async function sendMessage() {
+    const message = messageInput.value.trim();
+    if (!message) return;
+    
+    // Hide empty state
+    emptyState.style.display = 'none';
+    
+    // Add user message
+    addUserMessage(message);
+    
+    // Clear input
+    messageInput.value = '';
+    messageInput.style.height = 'auto';
+    sendBtn.disabled = true;
+    
+    // Show thinking
+    thinkingIndicator.classList.add('show');
+    scrollToBottom();
+    
+    try {
+        const res = await fetch('/chat', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                message: message,
+                history: conversationHistory
+            })
+        });
+        
+        const data = await res.json();
+        thinkingIndicator.classList.remove('show');
+        
+        if (data.error) {
+            showError(data.error);
+            return;
+        }
+        
+        // Update conversation history
+        conversationHistory.push({
+            role: 'user',
+            content: message
+        });
+        
+        conversationHistory.push({
+            role: 'assistant',
+            content: data.summary,
+            message_id: data.message_id,
+            type: data.type,
+            data: data.data,
+            sql: data.sql
+        });
+        
+        // Add AI response
+        addAIMessage(data);
+        
+        // Store last query data for visualizations
+        if (data.data) {
+            lastQueryData = data.data;
+        }
+        
+        // Show feedback widget
+        currentFeedbackMessageId = data.message_id;
+        setTimeout(() => {
+            feedbackWidget.classList.add('show');
+        }, 2000);
+        
+    } catch (err) {
+        thinkingIndicator.classList.remove('show');
+        showError('Failed to send message: ' + err.message);
+    }
+}
+
+function addUserMessage(text) {
+    const messageDiv = document.createElement('div');
+    messageDiv.className = 'message user-message';
+    messageDiv.innerHTML = `
+        <div class="message-header">
+            <div class="message-avatar user-avatar">U</div>
+            <div class="message-role">You</div>
+        </div>
+        <div class="message-content">${escapeHtml(text)}</div>
+    `;
+    messagesContainer.appendChild(messageDiv);
+    scrollToBottom();
+}
+
+function addAIMessage(data) {
+    const messageDiv = document.createElement('div');
+    messageDiv.className = 'message ai-message';
+    messageDiv.dataset.messageId = data.message_id;
+
+    let contentHTML = `
+        <div class="message-header">
+            <div class="message-avatar ai-avatar">S</div>
+            <div class="message-role">Solis AI</div>
+        </div>
+        <div class="message-content">
+            <div class="summary-card">
+                ${formatText(data.summary)}
+            </div>
+    `;
+
+    // Add data table if available
+    if (data.data && data.data.rows && data.data.rows.length > 0) {
+        contentHTML += createDataTable(data.data);
+    }
+
+    // Add suggestions
+    if (data.suggestions && data.suggestions.length > 0) {
+        contentHTML += createSuggestions(data.suggestions);
+    }
+
+    // Inline thumbs feedback UI
+    contentHTML += `
+        <div class="inline-feedback" data-for-message="${escapeHtml(String(data.message_id))}">
+            <button class="thumb-btn thumb-up" title="Helpful">
+                <span class="thumb-icon">👍</span><span>Helpful</span>
+            </button>
+            <button class="thumb-btn thumb-down" title="Not helpful">
+                <span class="thumb-icon">👎</span><span>Not helpful</span>
+            </button>
+            <button class="thumb-btn thumb-more" title="Give more feedback" style="margin-left:8px;">
+                <span class="thumb-icon">✍️</span><span>More</span>
+            </button>
+        </div>
+    `;
+
+    contentHTML += '</div>';
+    messageDiv.innerHTML = contentHTML;
+    messagesContainer.appendChild(messageDiv);
+
+    // Setup suggestion click handlers
+    messageDiv.querySelectorAll('.suggestion-chip').forEach(chip => {
+        chip.addEventListener('click', () => {
+            const suggestionText = chip.textContent.trim();
+            messageInput.value = suggestionText;
+            handleInputChange();
+            messageInput.focus();
+        });
+    });
+
+    // Setup table action handlers
+    const visualizeBtn = messageDiv.querySelector('.visualize-data-btn');
+    if (visualizeBtn) {
+        visualizeBtn.addEventListener('click', () => openChartModal(data.data));
+    }
+
+    const downloadBtn = messageDiv.querySelector('.download-csv-btn');
+    if (downloadBtn) {
+        downloadBtn.addEventListener('click', () => downloadCSV(data.data));
+    }
+
+    // Setup inline thumbs handlers
+    const inline = messageDiv.querySelector('.inline-feedback');
+    if (inline) {
+        const upBtn = inline.querySelector('.thumb-up');
+        const downBtn = inline.querySelector('.thumb-down');
+        const moreBtn = inline.querySelector('.thumb-more');
+
+        upBtn.addEventListener('click', async () => {
+            // visual feedback
+            upBtn.classList.add('selected');
+            downBtn.classList.remove('selected');
+            // send quick feedback "up"
+            await sendQuickFeedback(data.message_id, 'up', data);
+        });
+
+        downBtn.addEventListener('click', async () => {
+            downBtn.classList.add('selected');
+            upBtn.classList.remove('selected');
+            // send quick feedback "down"
+            await sendQuickFeedback(data.message_id, 'down', data);
+        });
+
+        // open full feedback widget prefilled
+        moreBtn.addEventListener('click', () => {
+            currentFeedbackMessageId = data.message_id;
+            // pre-open widget and prefill a short prompt
+            feedbackWidget.classList.add('show');
+            // prefill feedback text with empty or a template
+            const feedbackTextEl = document.getElementById('feedback-text');
+            if (feedbackTextEl) feedbackTextEl.value = '';
+            // highlight an emoji to reflect initial quick sentiment if any
+            document.querySelectorAll('.emoji-btn').forEach(b => b.classList.remove('selected'));
+            // show the widget (if not already) and scroll into view
+            feedbackWidget.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        });
+    }
+
+    scrollToBottom();
+}
+
+async function sendQuickFeedback(messageId, sentiment, aiMessageData) {
+    // sentiment: 'up' or 'down'
+    try {
+        // Try to find the user question paired with this assistant message in conversationHistory
+        const assistantIndex = conversationHistory.findIndex(msg => msg.role === 'assistant' && msg.message_id === messageId);
+        const userQuestion = assistantIndex > 0 ? conversationHistory[assistantIndex - 1]?.content || '' : '';
+
+        const payload = {
+            message_id: messageId,
+            rating: sentiment === 'up' ? 'positive' : 'negative',
+            feedback_text: '',              // empty for quick feedback
+            user_question: userQuestion,
+            sql_query: (conversationHistory[assistantIndex] && conversationHistory[assistantIndex].sql) ? conversationHistory[assistantIndex].sql : (aiMessageData?.sql || ''),
+            session_id: sessionId,
+            quick: true
+        };
+
+        // Fire-and-forget but await to detect errors
+        const res = await fetch('/feedback', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(payload)
+        });
+        const result = await res.json();
+
+        // Show ephemeral confirmation message in chat
+        const confirmDiv = document.createElement('div');
+        confirmDiv.style.cssText = `
+            background: rgba(34, 197, 94, 0.08);
+            border: 1px solid rgba(34, 197, 94, 0.18);
+            color: #bbf7d0;
+            padding: 0.5rem 0.75rem;
+            border-radius: 8px;
+            display: inline-block;
+            margin-top: 0.5rem;
+            font-size: 0.9rem;
+        `;
+        confirmDiv.textContent = sentiment === 'up' ? 'Thanks for the thumbs up!' : 'Thanks — we\'ll improve.';
+        
+        // Append to the assistant message inline-feedback container
+        const msgEl = document.querySelector(`[data-message-id="${messageId}"]`);
+        if (msgEl) {
+            const inline = msgEl.querySelector('.inline-feedback');
+            if (inline) {
+                // remove any existing small confirmation then add new
+                const existing = inline.querySelector('.quick-feedback-confirm');
+                if (existing) existing.remove();
+                confirmDiv.classList.add('quick-feedback-confirm');
+                inline.appendChild(confirmDiv);
+                // auto-remove after 3s
+                setTimeout(() => confirmDiv.remove(), 3000);
+            }
+        }
+
+        return result;
+    } catch (err) {
+        console.error('Quick feedback failed:', err);
+        showError('Failed to send feedback: ' + err.message);
+    }
+}
+
+function createDataTable(data) {
+    const { columns, rows, total_rows } = data;
+    const displayRows = rows.slice(0, 50); // Show first 50
+    
+    let tableHTML = `
+        <div class="data-table-container">
+            <div class="data-table-header">
+                <div class="data-table-title">
+                    <span>📋</span>
+                    <span>Query Results (${total_rows} rows)</span>
+                </div>
+                <div class="data-table-actions">
+                    <button class="table-action-btn visualize-data-btn">
+                        <span>📊</span>
+                        <span>Visualize</span>
+                    </button>
+                    <button class="table-action-btn download-csv-btn">
+                        <span>📥</span>
+                        <span>Download</span>
+                    </button>
+                </div>
+            </div>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+    `;
+    
+    columns.forEach(col => {
+        tableHTML += `<th>${escapeHtml(col)}</th>`;
+    });
+    
+    tableHTML += `
+                        </tr>
+                    </thead>
+                    <tbody>
+    `;
+    
+    displayRows.forEach(row => {
+        tableHTML += '<tr>';
+        row.forEach(cell => {
+            const cellValue = cell !== null && cell !== undefined ? escapeHtml(String(cell)) : '';
+            tableHTML += `<td>${cellValue}</td>`;
+        });
+        tableHTML += '</tr>';
+    });
+    
+    if (total_rows > 50) {
+        tableHTML += `
+            <tr>
+                <td colspan="${columns.length}" style="text-align: center; padding: 1rem; font-style: italic; color: rgba(255,255,255,0.6);">
+                    Showing 50 of ${total_rows} rows. Download CSV for complete data.
+                </td>
+            </tr>
+        `;
+    }
+    
+    tableHTML += `
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    `;
+    
+    return tableHTML;
+}
+
+function createSuggestions(suggestions) {
+    let html = `
+        <div class="suggestions">
+            <div class="suggestions-label">💭 You might also want to:</div>
+            <div class="suggestions-grid">
+    `;
+    
+    suggestions.forEach(suggestion => {
+        html += `
+            <div class="suggestion-chip">${escapeHtml(suggestion)}</div>
+        `;
+    });
+    
+    html += `
+            </div>
+        </div>
+    `;
+    
+    return html;
+}
+
+function openChartModal(data) {
+    if (!data || !data.rows || data.rows.length === 0) {
+        showError('No data available for visualization');
+        return;
+    }
+    
+    lastQueryData = data;
+    selectedChartType = null;
+    document.querySelectorAll('.chart-type-btn').forEach(b => b.classList.remove('selected'));
+    chartModal.classList.add('show');
+}
+
+async function applyChartSelection() {
+    if (!selectedChartType || !lastQueryData) {
+        showError('Please select a chart type');
+        return;
+    }
+    
+    chartModal.classList.remove('show');
+    
+    try {
+        const res = await fetch('/visualize', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                chart_type: selectedChartType,
+                rows: lastQueryData.rows,
+                cols: lastQueryData.columns
+            })
+        });
+        
+        const chartData = await res.json();
+        
+        if (chartData.error) {
+            showError(chartData.error);
+            return;
+        }
+        
+        // Add chart to conversation
+        addChartMessage(chartData);
+        
+    } catch (err) {
+        showError('Failed to create visualization: ' + err.message);
+    }
+}
+
+function addChartMessage(chartData) {
+    const messageDiv = document.createElement('div');
+    messageDiv.className = 'message ai-message';
+    
+    const chartId = 'chart_' + Date.now();
+    
+    messageDiv.innerHTML = `
+        <div class="message-header">
+            <div class="message-avatar ai-avatar">S</div>
+            <div class="message-role">Solis AI</div>
+        </div>
+        <div class="message-content">
+            <div class="chart-container">
+                <div class="chart-header">
+                    <div class="chart-title">📊 ${chartData.title || 'Data Visualization'}</div>
+                    <button class="table-action-btn" onclick="downloadChart('${chartId}')">
+                        <span>📸</span>
+                        <span>Download</span>
+                    </button>
+                </div>
+                <div class="chart-wrapper">
+                    <canvas id="${chartId}"></canvas>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    messagesContainer.appendChild(messageDiv);
+    scrollToBottom();
+    
+    // Render chart
+    setTimeout(() => renderChart(chartId, chartData), 100);
+}
+
+function renderChart(canvasId, chartData) {
+    const ctx = document.getElementById(canvasId);
+    if (!ctx) return;
+    
+    const colors = [
+        'rgba(102, 126, 234, 0.8)', 'rgba(118, 75, 162, 0.8)', 'rgba(239, 68, 68, 0.8)',
+        'rgba(34, 197, 94, 0.8)', 'rgba(251, 191, 36, 0.8)', 'rgba(236, 72, 153, 0.8)',
+        'rgba(14, 165, 233, 0.8)', 'rgba(168, 85, 247, 0.8)'
+    ];
+    
+    const borderColors = colors.map(c => c.replace('0.8', '1'));
+    
+    const isPieType = ['pie', 'doughnut', 'polarArea'].includes(chartData.chart_type);
+    
+    const config = {
+        type: chartData.chart_type === 'area' ? 'line' : chartData.chart_type,
+        data: {
+            labels: chartData.labels,
+            datasets: chartData.datasets.map(ds => ({
+                ...ds,
+                backgroundColor: isPieType ? colors : (chartData.chart_type === 'area' ? 'rgba(102, 126, 234, 0.3)' : colors[0]),
+                borderColor: isPieType ? borderColors : borderColors[0],
+                borderWidth: 2,
+                tension: 0.4,
+                fill: chartData.chart_type === 'area'
+            }))
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: true,
+                    labels: { 
+                        color: '#fff', 
+                        font: { size: 12 },
+                        padding: 15
+                    },
+                    position: isPieType ? 'right' : 'top'
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    padding: 12,
+                    titleFont: { size: 14 },
+                    bodyFont: { size: 13 },
+                    cornerRadius: 8
+                }
+            },
+            scales: !isPieType && chartData.chart_type !== 'radar' ? {
+                x: {
+                    ticks: { 
+                        color: '#fff', 
+                        maxRotation: 45,
+                        font: { size: 11 }
+                    },
+                    grid: { 
+                        color: 'rgba(255, 255, 255, 0.1)',
+                        drawBorder: false
+                    }
+                },
+                y: {
+                    ticks: { 
+                        color: '#fff',
+                        font: { size: 11 }
+                    },
+                    grid: { 
+                        color: 'rgba(255, 255, 255, 0.1)',
+                        drawBorder: false
+                    }
+                }
+            } : {}
+        }
+    };
+    
+    new Chart(ctx, config);
+}
+
+function downloadChart(chartId) {
+    const canvas = document.getElementById(chartId);
+    if (!canvas) return;
+    
+    const url = canvas.toDataURL('image/png');
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `chart_${Date.now()}.png`;
+    a.click();
+}
+async function downloadCSV(data) {
+    if (!data || !data.columns || !data.rows) {
+        showError('No data available to download');
+        return;
+    }
+    
+    try {
+        const res = await fetch('/download_csv', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                columns: data.columns,
+                rows: data.rows
+            })
+        });
+        
+        const blob = await res.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `solis_data_${Date.now()}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+    } catch (err) {
+        showError('Failed to download CSV: ' + err.message);
+    }
+}
+
+function selectEmoji(e) {
+    document.querySelectorAll('.emoji-btn').forEach(b => b.classList.remove('selected'));
+    e.currentTarget.classList.add('selected');
+}
+
+async function submitFeedback() {
+    const selectedEmoji = document.querySelector('.emoji-btn.selected');
+    const rating = selectedEmoji ? selectedEmoji.dataset.rating : null;
+    const text = feedbackText.value.trim();
+    
+    if (!rating && !text) {
+        showError('Please provide a rating or feedback');
+        return;
+    }
+    
+    if (!currentFeedbackMessageId) {
+        showError('No message to provide feedback for');
+        return;
+    }
+    
+    try {
+        // Get the message details
+        const messageEl = document.querySelector(`[data-message-id="${currentFeedbackMessageId}"]`);
+        const lastUserMsg = conversationHistory.find(msg => 
+            msg.role === 'assistant' && msg.message_id === currentFeedbackMessageId
+        );
+        
+        const res = await fetch('/feedback', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                message_id: currentFeedbackMessageId,
+                rating: rating,
+                feedback_text: text,
+                user_question: lastUserMsg ? conversationHistory[conversationHistory.indexOf(lastUserMsg) - 1]?.content : '',
+                sql_query: lastUserMsg?.sql || '',
+                session_id: sessionId
+            })
+        });
+        
+        const data = await res.json();
+        
+        if (data.message) {
+            document.getElementById('feedback-content').innerHTML = `
+                <div class="feedback-success">
+                    <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">✅</div>
+                    <div>${data.message}</div>
+                </div>
+            `;
+            
+            setTimeout(() => {
+                closeFeedback();
+            }, 2000);
+        }
+    } catch (err) {
+        showError('Failed to submit feedback: ' + err.message);
+    }
+}
+
+function closeFeedback() {
+    feedbackWidget.classList.remove('show');
+    
+    // Reset feedback form
+    setTimeout(() => {
+        document.getElementById('feedback-content').innerHTML = `
+            <div class="feedback-emojis">
+                <button class="emoji-btn" data-rating="excellent" title="Excellent">😍</button>
+                <button class="emoji-btn" data-rating="good" title="Good">😊</button>
+                <button class="emoji-btn" data-rating="okay" title="Okay">😐</button>
+                <button class="emoji-btn" data-rating="poor" title="Poor">😞</button>
+            </div>
+            <textarea 
+                class="feedback-text" 
+                id="feedback-text" 
+                placeholder="Tell us more (optional)..."
+            ></textarea>
+            <button class="feedback-submit" id="feedback-submit">Submit Feedback</button>
+        `;
+        
+        // Re-attach event listeners
+        document.querySelectorAll('.emoji-btn').forEach(btn => {
+            btn.addEventListener('click', selectEmoji);
+        });
+        document.getElementById('feedback-submit').addEventListener('click', submitFeedback);
+        
+        feedbackText.value = '';
+        currentFeedbackMessageId = null;
+    }, 300);
+}
+
+function startNewChat() {
+    if (conversationHistory.length === 0) return;
+    
+    if (confirm('Start a new conversation? This will clear the current chat.')) {
+        conversationHistory = [];
+        lastQueryData = null;
+        currentFeedbackMessageId = null;
+        sessionId = 'session_' + Date.now();
+        
+        // Clear messages
+        messagesContainer.innerHTML = '';
+        
+        // Show empty state
+        messagesContainer.innerHTML = `
+            <div class="empty-state" id="empty-state">
+                <div class="empty-state-icon">💬</div>
+                <h2>Welcome to Solis AI</h2>
+                <p>Ask me anything about your data, and I'll help you explore it</p>
+                <div class="starter-suggestions" id="starter-suggestions">
+                </div>
+            </div>
+        `;
+        
+        emptyState = document.getElementById('empty-state');
+        loadStarterSuggestions();
+        closeFeedback();
+    }
+}
+
+function showError(message) {
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'error-message';
+    errorDiv.textContent = '⚠️ ' + message;
+    messagesContainer.appendChild(errorDiv);
+    
+    setTimeout(() => {
+        errorDiv.remove();
+    }, 5000);
+    
+    scrollToBottom();
+}
+
+function scrollToBottom() {
+    setTimeout(() => {
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }, 100);
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function formatText(text) {
+    // Simple text formatting - convert line breaks to paragraphs
+    return text.split('\n').filter(p => p.trim()).map(paragraph => {
+        return `<p style="margin-bottom: 0.75rem;">${escapeHtml(paragraph)}</p>`;
+    }).join('');
+}
+
+// Auto-hide feedback widget after inactivity
+let feedbackTimer;
+feedbackWidget.addEventListener('mouseenter', () => {
+    clearTimeout(feedbackTimer);
+});
+
+feedbackWidget.addEventListener('mouseleave', () => {
+    feedbackTimer = setTimeout(() => {
+        if (feedbackWidget.classList.contains('show')) {
+            // Auto-minimize after 10 seconds of inactivity
+        }
+    }, 10000);
+});
+
+// Prevent zoom on double-tap on mobile
+let lastTouchEnd = 0;
+document.addEventListener('touchend', function(event) {
+    const now = Date.now();
+    if (now - lastTouchEnd <= 300) {
+        event.preventDefault();
+    }
+    lastTouchEnd = now;
+}, false);
+
+// Handle connection errors
+window.addEventListener('offline', () => {
+    showError('Lost connection to the server. Please check your internet connection.');
+});
+
+window.addEventListener('online', () => {
+    const messageDiv = document.createElement('div');
+    messageDiv.style.cssText = `
+        background: rgba(34, 197, 94, 0.1);
+        border: 1px solid rgba(34, 197, 94, 0.3);
+        color: #4ade80;
+        padding: 1rem 1.5rem;
+        border-radius: 12px;
+        margin: 1rem 2.5rem;
+        text-align: center;
+    `;
+    messageDiv.textContent = '✅ Connection restored';
+    messagesContainer.appendChild(messageDiv);
+    
+    setTimeout(() => {
+        messageDiv.remove();
+    }, 3000);
+});
+
+console.log('🌟 Solis AI initialized successfully');
+</script>
+</body>
+</html>
